@@ -1,4 +1,5 @@
 ----- || LIBRARY || -----
+
 local clonefunction = (clonefunction or function(fn: any) return fn end);
 local cloneref = (cloneref or function(instance: any) return instance end);
 
