@@ -68,6 +68,7 @@ getgenv().Logger = getgenv().Logger or {
 	ConsoleLogs = true;
 	SaveLogs = false;
 	
+	NewLogSignals = {};
 	current_logs = {};
 };
 
@@ -118,7 +119,7 @@ function Methods:CustomPrint(_type: string, str: string, custom_color: Color3)
 		log_txt.Parent.AutomaticSize = Enum.AutomaticSize.Y; log_txt.AutomaticSize = Enum.AutomaticSize.Y;
 
 		log_txt.Parent.image.Image = Logger.IconsEnabled and custom_print.custom_icon.Url or ""; log_txt.Parent.image.ImageColor3 = custom_print.text_color;
-		log_txt.Parent.image.ImageRectOffset = custom_print.custom_icon.ImageRectOffset; log_txt.Parent.image.ImageRectSize = custom_print.custom_icon.ImageRectSize;		
+		log_txt.Parent.image.ImageRectOffset = custom_print.custom_icon.ImageRectOffset; log_txt.Parent.image.ImageRectSize = custom_print.custom_icon.ImageRectSize;	
 	end;
 	
 	table.insert(Logger.current_logs, custom_print);
@@ -126,6 +127,13 @@ function Methods:CustomPrint(_type: string, str: string, custom_color: Color3)
 	
 	Methods:CreateFileLog(custom_print.timestamp, _type, str, custom_print.UUID);
 	local log_module = setmetatable({}, { __index = custom_print });
+	
+	task.spawn(function()
+		
+		for _, callback in pairs(Logger.NewLogSignals) do
+			if callback then Methods:SafeCallback(callback, tostring(custom_print.message), custom_print.text_color); end;
+		end;
+	end);
 	
 	log_module.update_message = function(...)
 		
@@ -187,6 +195,21 @@ function Methods:CustomPrint(_type: string, str: string, custom_color: Color3)
 	end;
 	
 	return log_module;
+end;
+
+function Methods:SafeCallback(__func, ...)
+	
+	if not (__func and typeof(__func) == "function") then return; end;
+
+	local Result = table.pack(xpcall(__func, function(__err)
+		
+		task.defer(error, debug.traceback(__err, 2))
+		return __err;
+		
+	end, ...))
+
+	if not Result[1] then return nil; end;
+	return table.unpack(Result, 2, Result.n);
 end;
 
 function Methods:CreateFileLog(timestamp, _type, str, UUID)
@@ -381,13 +404,17 @@ function Logger:Destroy()
 	end;
 end;
 
+function Logger:OnNewLog(callback)
+	table.insert(Logger.NewLogSignals, callback);
+end;
+
 ----- || SIGNALS || -----
 
 Logger.logger_connection = RunService.Heartbeat:Connect(function()
 	
 	if not CoreGui:FindFirstChild("DevConsoleMaster") then return; end;
-
-	local DevConsoleUI = CoreGui.DevConsoleMaster.DevConsoleWindow.DevConsoleUI;
+	
+	local DevConsoleUI = CoreGui.DevConsoleMaster.DevConsoleWindow:FindFirstChild("DevConsoleUI");
 	if not DevConsoleUI then return; end;
 
 	if not DevConsoleUI:FindFirstChild("MainView") then return; end;
