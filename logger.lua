@@ -80,8 +80,8 @@ current_date = string.format("%02d-%02d-%04d", current_date.month, current_date.
 
 type IconModule = { Icons: { string }; GetAsset: (Name: string) -> Icon?; };
 
-local __s, __d = pcall(function()
-	return (loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/lucide-roblox-direct/refs/heads/main/source.lua")) :: () -> IconModule)();
+local FetchIcons, Icons = pcall(function()
+	return (loadstring(game:HttpGet("https://gitlab.com/upio/lucide-roblox-direct/-/raw/main/source.lua")) :: () -> IconModule)();
 end);
 
 if Logger.logger_connection then Logger.logger_connection:Disconnect(); Logger.logger_connection = nil; end;
@@ -237,8 +237,8 @@ end;
 
 function Methods:GetIcon(IconName: string)
 
-	if not __s then return; end;
-	local success, icon_data = pcall(__d.GetAsset, IconName);
+	if not FetchIcons then return; end;
+	local success, icon_data = pcall(Icons.GetAsset, IconName);
 
 	if not success then return; end;
 	return icon_data;
