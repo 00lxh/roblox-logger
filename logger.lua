@@ -78,10 +78,11 @@ Logger.__index = Logger; Methods.__index = Methods;
 local current_date = os.date("*t");
 current_date = string.format("%02d-%02d-%04d", current_date.month, current_date.day, current_date.year);
 
-type IconModule = { Icons: { string }; GetAsset: (Name: string) -> Icon?; };
+type Icon = { ImageRectOffset: Vector2, ImageRectSize: Vector2, };
+type IconModule = { Icons: { string }, GetAsset: (Name: string) -> Icon?, };
 
 local FetchIcons, Icons = pcall(function()
-	return (loadstring(game:HttpGet("https://gitlab.com/upio/lucide-roblox-direct/-/raw/main/source.lua")) :: () -> IconModule)();
+	return (loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/lucide-roblox-direct/refs/heads/main/source.lua")) :: () -> IconModule)();
 end);
 
 if Logger.logger_connection then Logger.logger_connection:Disconnect(); Logger.logger_connection = nil; end;
@@ -237,11 +238,19 @@ end;
 
 function Methods:GetIcon(IconName: string)
 
-	if not FetchIcons then return; end;
-	local success, icon_data = pcall(Icons.GetAsset, IconName);
+	if not FetchIcons or not Icons then
+		return nil;
+	end;
+	
+	local Success, IconData = pcall(function()
+		return Icons.GetAsset(IconName);
+	end);
 
-	if not success then return; end;
-	return icon_data;
+	if not Success or typeof(IconData) ~= "table" then
+		return nil;
+	end;
+
+	return IconData;
 end;
 
 function Methods:GetCurrentDate()
